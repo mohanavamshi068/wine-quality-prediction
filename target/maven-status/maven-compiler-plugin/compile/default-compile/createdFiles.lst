@@ -1,0 +1,4 @@
+wineq/PredictWineQualityRF.class
+wineq/TrainRF.class
+wineq/PredictWineQualityLR.class
+wineq/TrainLR.class
