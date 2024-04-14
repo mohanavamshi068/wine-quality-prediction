@@ -1,37 +1,35 @@
-# Use Ubuntu as base image
+# Use the official Ubuntu image as the base image
 FROM ubuntu:latest
 
 # Update system packages and install Java
 RUN apt update && \
-    apt install -y default-jdk
+    DEBIAN_FRONTEND="noninteractive" apt install -y default-jdk
 
-# Install required packages
+# Install required packages for Apache Spark
 RUN apt install -y curl mlocate git scala
 
 # Download and extract Apache Spark
 RUN curl -O https://archive.apache.org/dist/spark/spark-3.2.0/spark-3.2.0-bin-hadoop3.2.tgz && \
-    tar xvf spark-3.2.0-bin-hadoop3.2.tgz
-
-# Move Spark files to installation directory and change permissions
-RUN mkdir /opt/spark && \
-    mv spark-3.2.0-bin-hadoop3.2/* /opt/spark && \
+    tar xvf spark-3.2.0-bin-hadoop3.2.tgz && \
+    mv spark-3.2.0-bin-hadoop3.2 /opt/spark && \
     chmod -R 777 /opt/spark
 
-# Add Spark installation directory to system path
-RUN echo 'export SPARK_HOME=/opt/spark' >> ~/.bashrc && \
-    echo 'export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin' >> ~/.bashrc
+# Add Spark binaries to the PATH
+RUN echo "export SPARK_HOME=/opt/spark" >> ~/.bashrc && \
+    echo "export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin" >> ~/.bashrc && \
+    . ~/.bashrc
 
-# Refresh shell to apply changes
-RUN /bin/bash -c "source ~/.bashrc"
-
-# Copy all necessary files into the container
-COPY . /app
+# Expose Spark ports
+EXPOSE 8080 7077
 
 # Set the working directory
 WORKDIR /app
 
+# Copy all necessary files into the container
+COPY . /app
+
 # Submit the training application when the container starts
-CMD ["spark-submit", \
+CMD ["/opt/spark/bin/spark-submit", \
      "--class", "wineq.TrainLR", \
      "--master", "local[*]", \
      "target/wine-quality-spark-0.0.1-SNAPSHOT.jar"]
